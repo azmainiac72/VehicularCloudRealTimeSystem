@@ -84,7 +84,7 @@ public class VehicularCloudFrame extends JFrame {
     private VCController vcc;
     private String completionTime;
     private String residencyTime;//
-    
+
     private String jobRequesterName;
     private String jobID;
     private String jobDuration;
@@ -92,8 +92,10 @@ public class VehicularCloudFrame extends JFrame {
     private JFrame vccFrame;
     private CardLayout vccLayout;
     private JPanel vccCardsPanel;
+    private DefaultTableModel model;
     private DefaultTableModel model1;//
     private DefaultTableModel model2;//
+    
     private JTable jobCompletionTimeTable;//
     private JTable vehicleResidencyTimeTable;//
     private JScrollPane jobCompletionTable;//
@@ -121,22 +123,14 @@ public class VehicularCloudFrame extends JFrame {
     private Queue<String> userInput;
     private JTextArea userInputTextArea;
     
-    private Queue<Job> tempJobQueue;
-    private Queue<String> jobIDQueue;
-    private Queue<String> jobNameQueue;
-    private Queue<String> jobDOBQueue; // new
-    private Queue<String> jobTimeStampQueue; // new
-    private Queue<String> requestTypeQueue;
+    private Queue<Job> tempJobQueue; //new
+    private Queue<String> jobIDQueue; //new
+    private Queue<String> jobNameQueue; //new
+    private Queue<String> requestTypeQueue; //new
     
-    private Queue<Vehicle> tempVehicleQueue; //
-    private Queue<String> vehicleNameQueue; //
-    private Queue<String> vehicleIDQueue; //
-    private Queue<String> vehicleDOBQueue; // new
-    private Queue<String> vehicleTimeStampQueue; // new
-    
-    private Database database; //new
-    
-    private int totalResidencyTime; //new
+    private Queue<Vehicle> tempVehicleQueue;//
+    private Queue<String> vehicleIDQueue;//
+    private Queue<String> vehicleNameQueue;//
 
 
     // Constructor
@@ -168,34 +162,30 @@ public class VehicularCloudFrame extends JFrame {
 		requestType = "";
 		requestStatus = "";
 		vcc = new VCController();
-		database = new Database(); //new
-		totalResidencyTime = 0; //new
 		
-		tempJobQueue = new LinkedList<Job>();
-		jobIDQueue = new LinkedList<String>();
-		jobNameQueue = new LinkedList<String>();
-		jobDOBQueue = new LinkedList<String>(); //new
-		jobTimeStampQueue = new LinkedList<String>(); //new
+		tempJobQueue = new LinkedList<Job>(); //new
+		jobIDQueue = new LinkedList<String>(); //new
+		jobNameQueue = new LinkedList<String>(); //new
 		requestTypeQueue = new LinkedList<String>();
 		
-		tempVehicleQueue = new LinkedList<Vehicle>(); //
-		vehicleIDQueue = new LinkedList<String>(); //
-		vehicleNameQueue = new LinkedList<String>(); //
-		vehicleDOBQueue = new LinkedList<String>(); //new
-		vehicleTimeStampQueue = new LinkedList<String>(); //new
+		tempVehicleQueue = new LinkedList<Vehicle>();//
+		vehicleIDQueue = new LinkedList<String>();//
+		vehicleNameQueue = new LinkedList<String>();//
 		
 		vccFrame = new JFrame();
 		vccLayout = new CardLayout();
         vccCardsPanel = new JPanel(vccLayout);
+        model = new DefaultTableModel();
         
         model1 = new DefaultTableModel();//
         model2 = new DefaultTableModel();//
-        
+
         //jobCompletionTimeTable = new JTable(model);//
         jobCompletionTimeTable = new JTable(model1);//
 
         //vehicleResidencyTimeTable = new JTable(model);//
         vehicleResidencyTimeTable = new JTable(model2);//
+
         userInput = new LinkedList<String>();
         userInputTextArea = new JTextArea("No Requests Available");
         
@@ -211,15 +201,14 @@ public class VehicularCloudFrame extends JFrame {
 	    server = new Server();
 	    serverThread = new Thread(server);
 	    serverThread.start();
-	    
-	    //Connects to Database
-	    database.connectDatabase();
 
         createTextFields();
         createButtons();
         createPanels();
+        //createTable();
         createJobTable();//
         createVehicleTable();//
+
 
         setSize(FRAME_WIDTH, FRAME_HEIGHT);
         setTitle("Vehicular Cloud Management System");
@@ -229,21 +218,17 @@ public class VehicularCloudFrame extends JFrame {
         jobRequesterSubmitButton.addActionListener(new JobRequesterSubmitListener());
     }
 
-	//Saves Vehicle to a Database
-	private void saveVehicleToDatabase() { //new
-	    database.addVehicle(tempVehicleQueue.peek(), vehicleNameQueue.peek(), vehicleIDQueue.peek(), vehicleDOBQueue.peek(), vehicleTimeStampQueue.peek()); //new
-		JOptionPane.showMessageDialog(this, "Data Accepted and Stored in Database!"); //new
+	//Saves User Data to a File
+	private void saveUserDataToFile(String userData) {
+	    output.println(userData);
+	    output.println();
+		String currentDir = System.getProperty("user.dir");
+		JOptionPane.showMessageDialog(this, "Data Accepted!\n\n Current working directory:" + currentDir);
 	}
-	
-	//Saves Job to a Database
-	private void saveJobToDatabase() { //new
-	    database.addJob(tempJobQueue.peek(), jobNameQueue.peek(), jobIDQueue.peek(), jobDOBQueue.peek(), jobTimeStampQueue.peek()); //new
-		JOptionPane.showMessageDialog(this, "Data Accepted and Stored in Database!"); //new
-	}
-	
 
 	//Register Vehicle Button Listener
 	class VehicleOwnerSubmitListener implements ActionListener {
+		
 	    public void actionPerformed(ActionEvent event) {
 	    	date = new Date();
 	    	timestamp = new Timestamp(date.getTime());
@@ -260,19 +245,16 @@ public class VehicularCloudFrame extends JFrame {
 	        String license= vehicleLicenseField.getText();	
 	        double residency = Double.parseDouble(vehicleResidencyField.getText()); 
 	        
+	        Vehicle vehicle = new Vehicle(make, model, year, color, license, residency);
+	        tempVehicleQueue.add(vehicle);
+	        
 	        //Get Vehicle Total Residency Time
-	        residencyTime = "" + (vcc.calculateResidencyTime() + residency); //
-	        vehicleIDQueue.add(id); //
-	        vehicleNameQueue.add(name); //
+	        residencyTime = "" + (vcc.calculateResidencyTime() + residency); //new
+	        vehicleIDQueue.add(id); //new
+	        vehicleNameQueue.add(name); //new
 	        
-	      //Output Vehicle Info to File
+	        //Output Vehicle Info to File
 	        String outputString = timestamp + " \nVehicle Owner: " + name + "\nDOB: " + dob + "\nID: " + id + "\nMake: " + make + "\nModel: " + model + "\nYear: " + year + "\nColor: " + color + "\nLicense: " + license + "\nResidency Time: " + residency;
-	        
-	        //Add a vehicle to VCC Vehicle Queue 
-	        Vehicle vehicle = new Vehicle(make, model, year, color, license, residency); //new
-	        tempVehicleQueue.add(vehicle); //new
-	        vehicleDOBQueue.add(dob); //new
-	        vehicleTimeStampQueue.add(timestamp.toString()); //new
 	        
 	        //Creates an instance of Client class and executes thread
 	        vehicleClient = new Client();
@@ -300,7 +282,7 @@ public class VehicularCloudFrame extends JFrame {
 	        vehicleYearField.setText("yyyy");
 	        vehicleColorField.setText("");
 	        vehicleLicenseField.setText("");
-	        vehicleResidencyField.setText("Hours");
+	        vehicleResidencyField.setText("");
 	    }
 	}
 
@@ -321,19 +303,41 @@ public class VehicularCloudFrame extends JFrame {
 	        String type = jobTypeField.getText(); 	
 	        String intensity = jobIntensityField.getText(); 
 	        
-	        //Add a job to VCC Job Queue 
-	        Job job = new Job(duration, deadline, type, intensity, false, false, 0);
-	        tempJobQueue.add(job); 
+	        //String jobName = jobRequesterNameField.getText();
+	        //String jobDob = jobRequesterDOBField.getText();
+	        //String jobId = jobRequesterIDField.getText();
+	        //double jobDuration = Double.parseDouble(jobDurationField.getText());
+	        //String jobDeadline = jobDeadlineField.getText();
+	        //String jobType = jobTypeField.getText(); 	
+	        //String jobIntensity = jobIntensityField.getText(); 
+
 	        
-	        //Get Completion Time
-	        completionTime = "" + (vcc.calculateCompletionTime() + duration); 
-	        jobIDQueue.add(id); 
-	        jobNameQueue.add(name);
-	        jobDOBQueue.add(dob); //update
-	        jobTimeStampQueue.add(timestamp.toString()); //update
+	        //Add a job to VCC Job Queue// 
+	        Job job = new Job(duration, deadline, type, intensity, false, false, 0);
+	        tempJobQueue.add(job);
+	        
+	        
+	        //String vehicleName = vehicleOwnerNameField.getText();
+	        //String vehicleDob = vehicleOwnerDOBField.getText();
+	        //String vehicleId = vehicleOwnerIDField.getText();
+	        //String vehicleMake = vehicleMakeField.getText();
+	        //String vehicleModel = vehicleModelField.getText();
+	        //int vehicleYear = Integer.parseInt(vehicleYearField.getText());
+	        //String vehicleColor = vehicleColorField.getText();
+	        //String vehicleLicence = vehicleLicenseField.getText();
+	        //double vehicleResidency= Double.parseDouble(vehicleResidencyField.getText());
+	        
+	        //Add a job to VCC Vehicle Queue// 
+	        //Vehicle vehicle = new Vehicle(vehicleMake, vehicleModel, vehicleYear, vehicleColor, vehicleLicence, vehicleResidency);
+	        //tempVehicleQueue.add(vehicle);
+	        
+	        //Get Job Completion Time
+	        completionTime = "" + (vcc.calculateCompletionTime() + duration); //new
+	        jobIDQueue.add(id); //new
+	        jobNameQueue.add(name); //new
 	        
 	        //Output Job Info to File
-	        String outputString = timestamp + " \nJob Requester: " + name + "\nDOB: " + dob + "\nID: " + id + "\nDuration: " + duration + "\nDeadline: " + deadline + "\nType: " +type +"\nIntensity: " + intensity + "\nCompletion Time: " + completionTime;
+	        String outputString = timestamp + " \nJob Requester: " + name + "\nDOB: " + dob + "\nID: " + id + "\nDuration: " + duration + "\nDeadline: " + deadline + "\nType: " + type +"\nIntensity: " + intensity + "\nCompletion Time: " + completionTime;
 	        
 	        //Creates an instance of Client class and executes thread
 	        jobClient = new Client();
@@ -366,6 +370,7 @@ public class VehicularCloudFrame extends JFrame {
 	    
 	}
 	
+	
 	//Individual User Calculate Completion Time Button Listener
     class CompletionTimeListener implements ActionListener {
         public void actionPerformed(ActionEvent event) {
@@ -379,8 +384,8 @@ public class VehicularCloudFrame extends JFrame {
         	JOptionPane.showMessageDialog(null, "Residency Time: " + residencyTime + " hours");
         }
     }
-    
-    //VCC Overall Calculate Job Completion Time Button Listener
+   
+    //VCC Overall Calculate Job Completion Time Button Listener//
     class VCCJobCompletionTimeListener implements ActionListener {
         public void actionPerformed(ActionEvent event) {
         	vccLayout.show(vccCardsPanel, "completionTime");
@@ -388,10 +393,10 @@ public class VehicularCloudFrame extends JFrame {
         }
     }
     
-    //VCC Overall Calculate Vehicle Residency Time Button Listener
+    //VCC Overall Calculate Vehicle Residency Time Button Listener//
     class VCCVehicleResidencyTimeListener implements ActionListener {
         public void actionPerformed(ActionEvent event) {
-        	vccLayout.show(vccCardsPanel, "residencyTime"); // new
+        	vccLayout.show(vccCardsPanel, "residencyTime");
         	vccFrame.setSize(800, 500);
         }
     }
@@ -426,15 +431,16 @@ public class VehicularCloudFrame extends JFrame {
     	
     }
     
-    //Creates Table of All Vehicle Residency Times for VCC
+  //Creates Table of All Vehicle Residency Times for VCC
     private void createVehicleTable() {
     	
-    	model2.addColumn("Vehicle Owner Name"); 
-    	model2.addColumn("Vehicle Owner ID"); 
-    	model2.addColumn("Residency Time"); 
+    	model2.addColumn("Vehicle Owner Name");
+    	model2.addColumn("Vehicle Owner ID");
+    	model2.addColumn("Vehicle Residency Time");
     	model2.addColumn("Total Vehicle Residency Time");
     	
     }
+    
     
     //Creates text fields
     private void createTextFields() {
@@ -458,7 +464,7 @@ public class VehicularCloudFrame extends JFrame {
         vehicleLicenseField = new JTextField(FIELD_WIDTH);	
         vehicleLicenseField.setText("");					
         vehicleResidencyField = new JTextField(FIELD_WIDTH);
-        vehicleResidencyField.setText("Hours");				
+        vehicleResidencyField.setText("");				
 
        
         //Job Requester Text Fields
@@ -508,7 +514,7 @@ public class VehicularCloudFrame extends JFrame {
 	        vehicleYearField.setText("yyyy");	
 	        vehicleColorField.setText("");		
 	        vehicleLicenseField.setText("");	
-	        vehicleResidencyField.setText("Hours");
+	        vehicleResidencyField.setText("");
 		}
 	}
 	
@@ -540,31 +546,25 @@ public class VehicularCloudFrame extends JFrame {
 		}
 	}
 	
-	//VCC Page Accept Button Listener
+	//VCC Page Accept Button Listener//
 		class VCCAcceptListener implements ActionListener {
 			public void actionPerformed(ActionEvent event) {
 				server.approveData(true);
 				server.respondToClient();
+				saveUserDataToFile(userInput.peek());
 				if(requestTypeQueue.peek().equalsIgnoreCase("job")) {
-					saveJobToDatabase();
 					vcc.addJob(tempJobQueue.peek());
 					model1.addRow(new Object[] {jobNameQueue.peek(), jobIDQueue.peek(), tempJobQueue.peek().getDuration(), tempJobQueue.peek().getCompletionTime()}); //new
 					tempJobQueue.remove();
-					jobIDQueue.remove(); 
+					jobIDQueue.remove();
 					jobNameQueue.remove();
-					jobDOBQueue.remove(); //new
-					jobTimeStampQueue.remove(); //new
 				}
 				else if(requestTypeQueue.peek().equalsIgnoreCase("vehicle")) {
-					saveVehicleToDatabase(); //new
 					vcc.addVehicle(tempVehicleQueue.peek());
-					totalResidencyTime = vcc.calculateResidencyTime();
-					model2.addRow(new Object[] {vehicleNameQueue.peek(), vehicleIDQueue.peek(), tempVehicleQueue.peek().getResidencyTime(), totalResidencyTime}); //
-					tempVehicleQueue.remove(); //
-					vehicleIDQueue.remove(); //
-					vehicleNameQueue.remove(); //
-					vehicleDOBQueue.remove(); //new
-					vehicleTimeStampQueue.remove(); //new
+					model2.addRow(new Object[] {vehicleNameQueue.peek(), vehicleIDQueue.peek(), tempVehicleQueue.peek().getResidencyTime()});//
+					tempVehicleQueue.remove();//
+					vehicleIDQueue.remove();//
+					vehicleNameQueue.remove();//
 				}
 				requestTypeQueue.remove();
 				userInput.remove();
@@ -572,28 +572,26 @@ public class VehicularCloudFrame extends JFrame {
 			}
 		}
 		
+		
+		
 	//VCC Page Reject Button Listener
 		class VCCRejectListener implements ActionListener {
 		    public void actionPerformed(ActionEvent event) {
 		        server.approveData(false);
 		        server.respondToClient();
 				if(requestTypeQueue.peek().equalsIgnoreCase("job")) {
-			        tempJobQueue.remove(); 
-					jobIDQueue.remove(); 
-					jobNameQueue.remove(); 
-					jobDOBQueue.remove(); //new
-					jobTimeStampQueue.remove(); //new
+			        tempJobQueue.remove(); //new
+					jobIDQueue.remove(); //new
+					jobNameQueue.remove(); //new
 				}
 				else if(requestTypeQueue.peek().equalsIgnoreCase("vehicle")) {
-					tempVehicleQueue.remove(); //new
-					vehicleIDQueue.remove(); //new
-					vehicleNameQueue.remove(); //new
-					vehicleDOBQueue.remove(); //new
-					vehicleTimeStampQueue.remove(); //new
+					tempJobQueue.remove();//
+					jobIDQueue.remove();//
+					jobNameQueue.remove();//
 				}
 				requestTypeQueue.remove();
 		        userInput.remove();
-		        updateUserInputText(); 
+		        updateUserInputText(); //new
 		        JOptionPane.showMessageDialog(vccFrame, "Data rejected");
 		    }
 		}
@@ -626,11 +624,13 @@ public class VehicularCloudFrame extends JFrame {
 		calculateCompletionTimeButton = new JButton("Calculate Completion Time");
 		vccJobCompletionTimeButton = new JButton("Calculate All Job Completion Times");//
 		vccJobCompletionTimeBackButton = new JButton("Back");//
+		
+		vccVehicleResidencyTimeButton = new JButton("Calculate All Vehicle Residency Times");//
+		vccVehicleResidencyTimeBackButton = new JButton("Back");//
+
 		vccViewRequestsButton = new JButton("View Requests");
 		vccViewRequestsBackButton = new JButton("Back");
 		
-		vccVehicleResidencyTimeButton = new JButton("Calculate All Vehicle Residency Times"); //
-		vccVehicleResidencyTimeBackButton = new JButton("Back"); //
 		
 		//UPDATED- Creates accept/reject buttons within VCController
 		vccAcceptButton = new JButton("Accept");
@@ -661,7 +661,7 @@ public class VehicularCloudFrame extends JFrame {
 		vccJobCompletionTimeBackButton.addActionListener(vccJobCompletionTimeBackListener);
 		
 		ActionListener vccVehicleResidencyTimeButtonListener = new VCCVehicleResidencyTimeListener();//
-		vccVehicleResidencyTimeButton.addActionListener(vccVehicleResidencyTimeButtonListener); 
+		vccVehicleResidencyTimeButton.addActionListener(vccVehicleResidencyTimeButtonListener);//
 		
 		ActionListener vccVehicleResidencyTimeBackListener = new ReturnVCCHomeListener();//
 		vccVehicleResidencyTimeBackButton.addActionListener(vccVehicleResidencyTimeBackListener);
@@ -751,7 +751,7 @@ public class VehicularCloudFrame extends JFrame {
 	    JPanel vehicleResidencyPanel = new JPanel();
 	    JPanel vccHomePanel = new JPanel();
 	    JPanel vccCompletionTimePanel = new JPanel();
-	    JPanel vccResidencyTimePanel = new JPanel(); //
+	    JPanel vccResidencyTimePanel = new JPanel();//
 	    JPanel vccViewRequestsPanel = new JPanel();
 	    JPanel vccRequestsButtonPanel = new JPanel();
 		
@@ -762,8 +762,8 @@ public class VehicularCloudFrame extends JFrame {
 		
 		vccCardsPanel.add(vccHomePanel, "home");
 		vccCardsPanel.add(vccCompletionTimePanel, "completionTime");
-		vccCardsPanel.add(vccResidencyTimePanel, "residencyTime"); //
-		
+		vccCardsPanel.add(vccResidencyTimePanel, "residencyTime");//
+
 		vccCardsPanel.add(vccViewRequestsPanel, "viewRequests");
 		vccFrame.add(vccCardsPanel);
 		
@@ -860,10 +860,10 @@ public class VehicularCloudFrame extends JFrame {
 
 		vccHomePanel.add(vccViewRequestsButton);
 		vccCompletionTimePanel.add(jobCompletionTable);//
-		vccResidencyTimePanel.add(vehicleResidencyTable);// 
+		vccCompletionTimePanel.add(vehicleResidencyTable);//
 
 		vccCompletionTimePanel.add(vccJobCompletionTimeBackButton);//
-		vccResidencyTimePanel.add(vccVehicleResidencyTimeBackButton);//
+		vccCompletionTimePanel.add(vccVehicleResidencyTimeBackButton);//
 
 		
 		//Added separate panel to view user requests
